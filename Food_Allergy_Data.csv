@@ -1,0 +1,21 @@
+Food Item,Ingredients,Common Allergies
+burger,"Bread, patty (beef/chicken/veg), lettuce, tomato, cheese, mayo","Gluten, dairy, egg (in mayo or bread), soy (in sauces)"
+butter_naan,"All-purpose flour, butter, salt, water","Gluten, dairy"
+chai,"Tea leaves, milk, water, sugar, spices (cardamom, ginger)","Dairy, caffeine"
+chapati,"Whole wheat flour, water, salt",Gluten
+chole_bhature,"Chickpeas, flour, spices, oil, yogurt","Gluten, legumes (chickpeas), dairy"
+dal_makhani,"Lentils, butter, cream, spices (cumin, garam masala)","Legumes, dairy"
+dhokla,"Gram flour, yogurt, mustard seeds, green chilies","Legumes (gram flour), dairy"
+fried_rice,"Rice, vegetables, soy sauce, oil, spices","Soy, gluten (in soy sauce), sesame (optional)"
+idli,"Rice, lentils, water, salt",Legumes (lentils)
+jalebi,"Flour, sugar, ghee, cardamom","Gluten (flour), dairy (ghee)"
+kaathi_rolls,"Flatbread, spiced filling (veg/chicken), chutney",Gluten
+kadai_paneer,"Paneer, tomatoes, cream, spices",Dairy
+kulfi,"Milk, sugar, cardamom, saffron",Dairy
+masala_dosa,"Rice, lentils, potato filling, spices, ghee","Legumes (lentils), dairy (ghee)"
+momos,"Flour, vegetables/meat, spices, soy sauce","Gluten, soy"
+paani_puri,"Flour, water, spiced water, chickpeas","Gluten, legumes (chickpeas)"
+pakode,"Gram flour, onions, spices, oil","Legumes (gram flour), gluten (cross-contamination)"
+pav_bhaji,"Pav (bread), mashed vegetables, butter, spices","Gluten, dairy"
+pizza,"Flour, cheese, tomato sauce, toppings (veg/non-veg)","Gluten, dairy, soy"
+samosa,"Flour, potato filling, peas, spices, oil","Gluten, legumes (peas), dairy (optional)"

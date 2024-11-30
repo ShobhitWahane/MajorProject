@@ -1,0 +1,38 @@
+<!-- Health Issues and Allergies Page (health.html) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Issues & Allergies</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="tab" disabled>Health Information</button>
+        </div>
+        <form class="health-form" action="{{ url_for('submit_health_info') }}" method="POST">
+            <!-- Health Issues Input -->
+            <label for="health-issues">Do you have any health issues?</label>
+            <textarea id="health-issues" name="health_issues" placeholder="Enter any health issues" required></textarea>
+
+            <!-- Allergies Input -->
+            <label for="allergies">Do you have any allergies?</label>
+            <textarea id="allergies" name="allergies" placeholder="Enter any allergies" required></textarea>
+
+            <!-- Submit button -->
+            <button type="submit" class="next-btn">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        document.querySelector('.health-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            // Handle form submission here, you can store data, or redirect to another page
+            alert('Health information submitted!');
+            window.location.href = "{{ url_for('image_upload') }}";  // Redirect to the image upload page
+        });
+    </script>
+</body>
+</html>

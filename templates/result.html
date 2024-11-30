@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header with navigation tabs -->
+        <div class="header">
+            <button class="tab">Food Recognition</button>
+            <button class="tab">Allergen Detection</button>
+        </div>
+
+        <!-- Result Section -->
+        <h2>Result</h2>
+        
+        <div class="result-content">
+            <div class="result-image">
+                <!-- Display the uploaded image -->
+                <img src="{{ url_for('static', filename=image_url) }}" alt="Food Image" class="food-image">
+            </div>
+
+            <div class="result-details">
+                <!-- Display food recognition result -->
+                <p><strong>Food Recognized:</strong> {{ food_label }}</p>
+
+                <!-- Display allergen detection results -->
+                <p><strong>Allergens Detected:</strong></p>
+                <ul>
+                    {% for allergen in allergens %}
+                        <li>{{ allergen }}</li>
+                    {% endfor %}
+                </ul>
+
+                <!-- Display allergy match message -->
+                <p><strong>Allergy Check:</strong></p>
+                <p>{{ allergy_message }}</p>  <!-- Allergy message dynamically populated -->
+
+                <p><strong>Health Recommendations:</strong></p>
+                <p>{{ health_recommendations }}</p>
+            </div>
+        </div>
+
+        <!-- Back to Home Button -->
+        <div class="button-group">
+            <button class="upload-btn" onclick="window.location.href='index.html'">Back to Home</button>
+        </div>
+    </div>
+</body>
+
+</html>

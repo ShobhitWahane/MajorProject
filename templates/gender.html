@@ -1,0 +1,57 @@
+<!-- Gender and Profile Page (gender.html) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal & Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="tab" disabled>Goal & profile</button>
+        </div>
+        <form class="profile-form">
+            <!-- Gender selection -->
+            <label for="gender">What is your gender?</label>
+            <div class="gender-options">
+                <button type="button" class="gender-btn" id="maleBtn">Male</button>
+                <button type="button" class="gender-btn" id="femaleBtn">Female</button>
+                <button type="button" class="gender-btn" id="otherBtn">Other</button>
+            </div>
+
+            <!-- Age input -->
+            <label for="age">How old are you?</label>
+            <input type="number" id="age" placeholder="Enter your age" required>
+
+            <!-- Height input -->
+            <label for="height">What is your height? (in cm)</label>
+            <input type="number" id="height" placeholder="Enter your height in cm" required>
+
+            <!-- Weight input -->
+            <label for="weight">What is your weight? (in kg)</label>
+            <input type="number" id="weight" placeholder="Enter your weight in kg" required>
+
+            <!-- Submit button -->
+            <button type="submit" class="next-btn">Next</button>
+        </form>
+    </div>
+
+    <script>
+        const genderButtons = document.querySelectorAll('.gender-btn');
+        genderButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                genderButtons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            });
+        });
+
+        document.querySelector('.profile-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            // Redirect to the health issues page
+            window.location.href = "{{ url_for('health') }}";  // Correct Flask route for health.html
+        });
+    </script>
+</body>
+</html>
