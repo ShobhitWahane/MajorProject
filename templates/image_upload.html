@@ -3,66 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Input</title>
+    <title>Upload Image</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h2>Upload Food Image</h2>
-        <form class="image-form" id="imageUploadForm" method="POST" action="/upload" enctype="multipart/form-data">
-            <label for="imageUpload">Select an image from your gallery or take a photo:</label>
-            <input type="file" id="imageUpload" name="image" accept="image/*" required>
-            
-            <div class="button-group">
-                <button type="submit" class="upload-btn">Upload</button>
-                <button type="button" class="camera-btn" id="cameraBtn">Use Camera</button>
-            </div>
+        <h1>Upload Food Image</h1>
+        <form action="{{ url_for('upload_image') }}" method="POST" enctype="multipart/form-data" onsubmit="console.log('Form submitted!');">
+            <label for="image">Choose an image of your food:</label>
+            <input type="file" id="image" name="image" accept="image/*" required>
+            <button type="submit" class="upload-btn">Upload</button>
         </form>
         
-
-        <!-- Camera section -->
-        <div id="cameraContainer" style="display: none;">
-            <video id="video" width="320" height="240" autoplay></video>
-            <button id="captureBtn">Capture Image</button>
-            <canvas id="canvas" style="display: none;"></canvas>
-            <button id="saveCapturedImage" style="display: none;">Save Image</button>
-        </div>
     </div>
-
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const cameraContainer = document.getElementById('cameraContainer');
-        const captureBtn = document.getElementById('captureBtn');
-        const saveCapturedImage = document.getElementById('saveCapturedImage');
-
-        // Access the camera
-        document.getElementById('cameraBtn').addEventListener('click', function() {
-            cameraContainer.style.display = 'block';
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    video.srcObject = stream;
-                })
-                .catch(err => {
-                    console.error("Error accessing the camera: ", err);
-                    alert('Could not access the camera.');
-                });
-        });
-
-        // Capture the image from the video feed
-        captureBtn.addEventListener('click', function() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0);
-            saveCapturedImage.style.display = 'inline-block'; // Show save button
-        });
-
-        // Save the captured image
-        saveCapturedImage.addEventListener('click', function() {
-            const imageData = canvas.toDataURL('image/png');
-            alert('Image captured! (Data URL: ' + imageData + ')'); // Placeholder for actual save/upload
-        });
-    </script>
 </body>
 </html>
