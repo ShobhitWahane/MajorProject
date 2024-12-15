@@ -1,22 +1,26 @@
 import os
 import numpy as np
-from flask import Flask, request, jsonify, render_template, session
+import pandas as pd
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import pymysql
+from werkzeug.security import generate_password_hash, check_password_hash
 
-# Initialize the Flask app
+# --- Initialize Flask App ---
 app = Flask(__name__)
-# app.secret_key = 'your_secret_key'  # For session management
+app.secret_key = os.urandom(24)  # Use a secure random secret key
 
-#new add
-import pandas as pd
-allergy_data = pd.read_csv('Food_Allergy_Data.csv')
-
-# Load the pre-trained model
-model_path = "Model/model_v1_inceptionV3.h5"  # Update the path to your model
+# --- Load Pre-Trained Model ---
+model_path = "Model/model_v1_inceptionV3.h5"
 food_recognition_model = load_model(model_path)
+print("Model loaded successfully!")
 
-# Define the list of food classes (based on your dataset structure)
+# --- Load Allergen CSV Data ---
+allergy_data = pd.read_csv('Food_Allergy_Data.csv')
+print("Allergy data loaded successfully!")
+
+# --- Define Food Classes ---
 food_classes = [
     "burger", "butter_naan", "chai", "chapati", "chole_bhature",
     "dal_makhani", "dhokla", "fried_rice", "idli", "jalebi",
@@ -24,121 +28,229 @@ food_classes = [
     "paani_puri", "pakode", "pav_bhaji", "pizza", "samosa"
 ]
 
+# --- Database Connection ---
+def get_db_connection():
+    try:
+        connection = pymysql.connect(
+            host='localhost',
+            user='root',
+            password='Sadb@123',  # Update with your MySQL password
+            database='foodallergyapp'
+        )
+        return connection
+    except Exception as e:
+        print(f"Database connection failed: {str(e)}")
+        return None
 
-# Define routes for your Flask app
+
+# --- Routes ---
 @app.route('/')
 def home():
     return render_template('index.html')
-
-@app.route('/image_upload')
-def image_upload():
-    return render_template('image_upload.html')
-
-@app.route('/health')
-def health():
-    return render_template('health.html')
 
 @app.route('/gender')
 def gender():
     return render_template('gender.html')
 
-@app.route('/upload', methods=['POST'])
-def upload_image():
-    file = request.files.get('image')  # Get the uploaded file
-    if file:
+@app.route('/health')
+def health():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('health.html')
+
+@app.route('/image_upload', methods=['GET'])
+def image_upload():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('image_upload.html')
+
+@app.route('/register', methods=['POST'])
+def register():
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    if not email or not password:
+        return jsonify({'error': 'Email and password are required!'}), 400
+
+    hashed_password = generate_password_hash(password)
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed!'}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT user_id FROM users WHERE email = %s", (email,))
+            if cursor.fetchone():
+                return jsonify({'error': 'User already exists!'}), 400
+
+            cursor.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, hashed_password))
+            connection.commit()
+            return jsonify({'message': 'Registration successful!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        connection.close()
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if not email or not password:
+            return "Email and password are required!", 400
+
+        connection = get_db_connection()
+        if not connection:
+            return "Database connection failed!", 500
+
         try:
-            # Ensure the uploads folder exists
-            upload_folder = 'static/uploads/'
-            os.makedirs(upload_folder, exist_ok=True)
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT user_id, password FROM users WHERE email = %s", (email,))
+                user = cursor.fetchone()
 
-            # Save the uploaded image
-            file_path = os.path.join(upload_folder, file.filename)
-            file.save(file_path)
-
-            # Set the image URL relative to 'static'
-            image_url = f"uploads/{file.filename}"  # Static-relative path
-
-            # Process the uploaded image for food recognition
-            from io import BytesIO
-            file_stream = BytesIO(file.read())
-            image = load_img(file_path, target_size=(299, 299))  # Load image at required size
-            image_array = img_to_array(image) / 255.0  # Normalize image
-            image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension
-
-            # Predict food label using the model
-            predictions = food_recognition_model.predict(image_array)
-            food_index = np.argmax(predictions)
-
-            # Get the predicted food label
-            if food_index < len(food_classes):
-                food_label = food_classes[food_index]
-            else:
-                return jsonify({'error': 'Prediction index out of range'}), 400
-
-            # Step 1: Normalize user allergies (to lowercase and strip spaces)
-            user_allergies = session.get('allergies', [])  # List of user-entered allergies
-            user_allergies_normalized = [allergen.strip().lower() for allergen in user_allergies]
-
-            # Step 2: Normalize detected allergens (to lowercase and strip spaces)
-            detected_allergens = detect_allergens(food_label)  # Call to your detect_allergens function
-            detected_allergens_normalized = [allergen.strip().lower() for allergen in detected_allergens]
-
-            # Step 3: Match detected allergens with user allergies
-            matching_allergens = [allergen for allergen in detected_allergens_normalized if allergen in user_allergies_normalized]
-
-            # Debugging step - check the values of allergies for logging purposes
-            print("User Allergies (Normalized):", user_allergies_normalized)
-            print("Detected Allergens (Normalized):", detected_allergens_normalized)
-            print("Matching Allergens:", matching_allergens)
-
-            # Step 4: Prepare allergy message
-            if matching_allergens:
-                allergy_message = f"Allergy Matched! Do not consume '{food_label}' as it contains: {', '.join(matching_allergens)}."
-            else:
-                allergy_message = f"You are safe to consume '{food_label}'. No matched allergens detected."
-
-            # Other messages
-            message = f"Food '{food_label}' contains the following allergens: {', '.join(detected_allergens)}." if detected_allergens else "No allergens detected."
-            health_recommendations = "Please consult a doctor if you are unsure about allergens."
-
-            # Render the result template
-            return render_template('result.html',
-                                   food_label=food_label,
-                                   message=message,
-                                   allergy_message=allergy_message,
-                                   allergens=detected_allergens,
-                                   image_url=image_url,
-                                   health_recommendations=health_recommendations)
+                if user:
+                    stored_hash = user[1]  # Hashed password
+                    if check_password_hash(stored_hash, password):
+                        session['user_id'] = user[0]
+                        session['email'] = email
+                        return redirect(url_for('health'))
+                    else:
+                        return "Invalid email or password!", 401
+                else:
+                    return "User not found!", 404
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            print(f"Login error: {e}")
+            return "Error logging in!", 500
+        finally:
+            connection.close()
 
-    return jsonify({'error': 'No file uploaded'}), 400
+    return render_template('login.html')
 
-
-
-#new added
-def detect_allergens(food_label):
-    matched_row = allergy_data[allergy_data['Food Item'].str.lower() == food_label.lower()]
-    
-    if not matched_row.empty:
-        allergens = matched_row['Common Allergies'].values[0]
-        
-        # Check if allergens is NaN and handle it
-        if pd.isna(allergens):
-            return []  # No allergens detected if NaN
-        
-        # Split the allergen string into a list
-        return allergens.split(', ')
-    
-    return []  # Return empty list if no match found
-
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
 
 @app.route('/submit_health_info', methods=['POST'])
 def submit_health_info():
-    data = request.json
-    allergies = data.get('allergies', [])
-    session['allergies'] = allergies  # Store allergies in the session
-    return jsonify({'message': 'Health information received'}), 200
+    health_issues = request.form.get('health_issues', '').strip()
+    allergies = request.form.get('allergies', '').strip().split(',')
+    user_id = session.get('user_id')
+
+    print(f"Health Issues: {health_issues}")
+    print(f"Allergies Entered: {allergies}")
+
+    if not user_id:
+        return jsonify({'error': 'User not logged in!'}), 403
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed!'}), 500
+
+    try:
+        with connection.cursor() as cursor:
+            # Update health issues
+            cursor.execute("UPDATE users SET health_issues = %s WHERE user_id = %s", (health_issues, user_id))
+            # Insert allergies
+            for allergy in allergies:
+                print(f"Inserting Allergy: {allergy.strip().lower()} for User: {user_id}")
+                cursor.execute(
+                    "INSERT INTO allergies (user_id, allergy_name) VALUES (%s, %s)",
+                    (user_id, allergy.strip().lower())
+                )
+            connection.commit()
+            print(f"Health information saved for user {user_id}.")
+    except Exception as e:
+        print(f"Error saving health info: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        connection.close()
+
+    return redirect(url_for('image_upload'))
+
+
+@app.route('/upload', methods=['POST'], endpoint='upload_image')
+def upload_image():
+    # Debugging: Check session data
+    print("Session Data:", session)
+
+    file = request.files.get('image')
+    if not file:
+        return jsonify({'error': 'No file uploaded!'}), 400
+
+    try:
+        # Save the uploaded image
+        upload_folder = 'static/uploads/'
+        os.makedirs(upload_folder, exist_ok=True)
+        file_path = os.path.join(upload_folder, file.filename)
+        file.save(file_path)
+
+        # Process the image
+        image = load_img(file_path, target_size=(299, 299))
+        image_array = img_to_array(image) / 255.0
+        image_array = np.expand_dims(image_array, axis=0)
+
+        # Predict food label
+        predictions = food_recognition_model.predict(image_array)
+        food_index = np.argmax(predictions)
+        food_label = food_classes[food_index]
+
+        # Detect allergens for the food item
+        detected_allergens = detect_allergens(food_label)
+        print("Detected Allergens:", detected_allergens)
+
+        # Fetch user allergies from the database
+        user_allergies = get_user_allergies(session.get('user_id'))
+        print("User Allergies from Database:", user_allergies)
+
+        # Normalize allergens for comparison
+        detected_allergens_normalized = [a.strip().lower() for a in detected_allergens]
+        user_allergies_normalized = [a.strip().lower() for a in user_allergies]
+        print("Normalized Detected Allergens:", detected_allergens_normalized)
+        print("Normalized User Allergies:", user_allergies_normalized)
+
+        # Match allergens
+        matching_allergens = [a for a in detected_allergens_normalized if a in user_allergies_normalized]
+        print("Matching Allergens:", matching_allergens)
+
+        allergy_message = (
+            f"⚠️ Allergy Alert! '{food_label}' contains: {', '.join(matching_allergens)}."
+            if matching_allergens
+            else f"✅ Safe to consume '{food_label}'."
+        )
+
+        return render_template(
+            'result.html',
+            food_label=food_label,
+            allergens=detected_allergens,
+            allergy_message=allergy_message,
+            image_url=f"uploads/{file.filename}"
+        )
+    except Exception as e:
+        print(f"Error in upload_image route: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# Helper functions
+def detect_allergens(food_label):
+    matched_row = allergy_data[allergy_data['Food Item'].str.strip().str.lower() == food_label.lower()]
+    if not matched_row.empty:
+        allergens = matched_row['Common Allergies'].values[0]
+        return allergens.split(', ') if not pd.isna(allergens) else []
+    return []
+
+def get_user_allergies(user_id):
+    connection = get_db_connection()
+    if not connection:
+        return []
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT allergy_name FROM allergies WHERE user_id = %s", (user_id,))
+            return [row[0].lower() for row in cursor.fetchall()]
+    finally:
+        connection.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
