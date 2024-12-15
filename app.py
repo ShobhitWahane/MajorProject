@@ -171,11 +171,8 @@ def submit_health_info():
     return redirect(url_for('image_upload'))
 
 
-@app.route('/upload', methods=['POST'], endpoint='upload_image')
+@app.route('/upload', methods=['POST'])
 def upload_image():
-    # Debugging: Check session data
-    print("Session Data:", session)
-
     file = request.files.get('image')
     if not file:
         return jsonify({'error': 'No file uploaded!'}), 400
@@ -197,30 +194,32 @@ def upload_image():
         food_index = np.argmax(predictions)
         food_label = food_classes[food_index]
 
-        # Detect allergens for the food item
+        # Detect allergens for the food
         detected_allergens = detect_allergens(food_label)
-        print("Detected Allergens:", detected_allergens)
 
-        # Fetch user allergies from the database
+        # Retrieve user allergies from the database
         user_allergies = get_user_allergies(session.get('user_id'))
-        print("User Allergies from Database:", user_allergies)
 
-        # Normalize allergens for comparison
+        # Normalize both detected allergens and user allergies
         detected_allergens_normalized = [a.strip().lower() for a in detected_allergens]
         user_allergies_normalized = [a.strip().lower() for a in user_allergies]
-        print("Normalized Detected Allergens:", detected_allergens_normalized)
-        print("Normalized User Allergies:", user_allergies_normalized)
 
-        # Match allergens
-        matching_allergens = [a for a in detected_allergens_normalized if a in user_allergies_normalized]
-        print("Matching Allergens:", matching_allergens)
+        # Match user allergies with detected allergens using substring matching
+        matching_allergens = [
+            user_allergy for user_allergy in user_allergies_normalized
+            if any(user_allergy in allergen for allergen in detected_allergens_normalized)
+        ]
 
-        allergy_message = (
-            f"⚠️ Allergy Alert! '{food_label}' contains: {', '.join(matching_allergens)}."
-            if matching_allergens
-            else f"✅ Safe to consume '{food_label}'."
-        )
+        # Prepare the allergy warning message
+        if matching_allergens:
+            allergy_message = (
+                f"⚠️ Allergy Alert! '{food_label}' contains allergens you are allergic to: "
+                f"{', '.join(matching_allergens)}."
+            )
+        else:
+            allergy_message = f"✅ Safe to consume '{food_label}'. No matched allergens detected."
 
+        # Render the result page
         return render_template(
             'result.html',
             food_label=food_label,
@@ -229,17 +228,18 @@ def upload_image():
             image_url=f"uploads/{file.filename}"
         )
     except Exception as e:
-        print(f"Error in upload_image route: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 # Helper functions
 def detect_allergens(food_label):
+    # Find the row in the CSV matching the food label
     matched_row = allergy_data[allergy_data['Food Item'].str.strip().str.lower() == food_label.lower()]
     if not matched_row.empty:
         allergens = matched_row['Common Allergies'].values[0]
+        # Return allergens as a list if not empty or NaN
         return allergens.split(', ') if not pd.isna(allergens) else []
-    return []
+    return []  # Return an empty list if no allergens found
 
 def get_user_allergies(user_id):
     connection = get_db_connection()
