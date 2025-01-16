@@ -8,14 +8,24 @@
 </head>
 <body>
     <div class="container">
+        <div class="avatar">
+            <img src="{{ url_for('static', filename='avacado.jpeg') }}" alt="Avocado">
+        </div>
         <h1>Food Recognition Result</h1>
-        <img src="{{ url_for('static', filename=image_url) }}" alt="Uploaded Image" width="300">
+        <div class="s1"><img src="{{ url_for('static', filename=image_url) }}" alt="Uploaded Image" width="300" class="result-image"></div>
         <p><strong>Food Item:</strong> {{ food_label }}</p>
         <p><strong>Allergens:</strong> {{ ', '.join(allergens) if allergens else 'None detected' }}</p>
         <p><strong>Message:</strong> {{ message }}</p>
         <p><strong>Allergy Warning:</strong> {{ allergy_message }}</p>
         <p><strong>Health Recommendation:</strong> {{ health_recommendations }}</p>
-        <a href="{{ url_for('image_upload') }}">Upload Another Image</a>
+        <a href="{{ url_for('image_upload') }}" class="upload-another-btn">Upload Another Image</a>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Optional: Add any JavaScript functionality here
+            console.log('Result page loaded successfully!');
+        });
+    </script>
 </body>
 </html>
