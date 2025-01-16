@@ -20,5 +20,16 @@
         </form>
         <p>Don't have an account? <a href="{{ url_for('home') }}">Register</a></p>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    alert('Form submitted successfully!');
+                });
+            });
+        });
+    </script>
 </body>
 </html>
