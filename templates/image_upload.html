@@ -8,13 +8,26 @@
 </head>
 <body>
     <div class="container">
+        <div class="avatar">
+            <img src="{{ url_for('static', filename='avacado.jpeg') }}" alt="Avocado">
+        </div>
         <h1>Upload Food Image</h1>
-        <form action="{{ url_for('upload_image') }}" method="POST" enctype="multipart/form-data" onsubmit="console.log('Form submitted!');">
+        <form action="{{ url_for('upload_image') }}" method="POST" enctype="multipart/form-data">
             <label for="image">Choose an image of your food:</label>
             <input type="file" id="image" name="image" accept="image/*" required>
             <button type="submit" class="upload-btn">Upload</button>
         </form>
-        
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    alert('Form submitted successfully!');
+                });
+            });
+        });
+    </script>
 </body>
 </html>
